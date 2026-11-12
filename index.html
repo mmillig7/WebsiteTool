@@ -4,103 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0e13">
-  <title>Tinsel collage generator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&display=swap" rel="stylesheet">
+  <title>Collage</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app">
-    <aside class="panel">
-      <header class="intro">
-        <h1>Tinsel collage generator</h1>
-        <p class="lede">A new glitch collage each time. Same tinsel family, a different picture.</p>
-      </header>
-
-      <button type="button" id="generate" class="primary">Generate <kbd>Space</kbd></button>
-
-      <div class="seed-row">
-        <label for="seed">Seed</label>
-        <input id="seed" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" enterkeyhint="go">
-        <button type="button" id="use-seed">Use seed</button>
-      </div>
-
-      <fieldset>
-        <legend>Frame</legend>
-        <div class="segment" role="radiogroup" aria-label="Frame">
-          <label><input type="radio" name="aspect" value="portrait" checked> Portrait</label>
-          <label><input type="radio" name="aspect" value="square"> Square</label>
-          <label><input type="radio" name="aspect" value="landscape"> Landscape</label>
-        </div>
-      </fieldset>
+    <aside class="controls">
+      <h1>Collage</h1>
 
       <div class="slider">
         <div class="slider-top">
-          <label for="streak">Streak length</label>
-          <output id="streak-out" for="streak">62</output>
+          <label for="width">Width</label>
+          <output id="width-out" for="width">880</output>
         </div>
-        <input id="streak" type="range" min="0" max="100" value="62">
+        <input id="width" type="range" min="360" max="1400" value="880" step="20">
       </div>
 
       <div class="slider">
         <div class="slider-top">
-          <label for="blocks">Block count</label>
-          <output id="blocks-out" for="blocks">9</output>
+          <label for="height">Height</label>
+          <output id="height-out" for="height">1560</output>
         </div>
-        <input id="blocks" type="range" min="6" max="14" value="9" step="1">
+        <input id="height" type="range" min="480" max="2000" value="1560" step="20">
       </div>
 
-      <div class="slider">
-        <div class="slider-top">
-          <label for="sparkles">Sparkles</label>
-          <output id="sparkles-out" for="sparkles">72</output>
-        </div>
-        <input id="sparkles" type="range" min="40" max="120" value="72" step="1">
-      </div>
-
-      <div class="slider">
-        <div class="slider-top">
-          <label for="beads">Photo density</label>
-          <output id="beads-out" for="beads">55</output>
-        </div>
-        <input id="beads" type="range" min="0" max="100" value="55">
-        <p class="hint">How tightly photos from the Assets folder are packed.</p>
-      </div>
-
-      <label class="check" for="randomise">
-        <input id="randomise" type="checkbox" checked>
-        Randomise settings
-      </label>
-
-      <div class="field">
-        <label for="photo">Use my photo</label>
-        <input id="photo" type="file" accept="image/*">
-        <button type="button" id="clear-photo" class="texty" disabled>Clear photo</button>
-        <p class="hint">Replaces the Assets photos for this collage. The seed still controls the glitch.</p>
-      </div>
-
-      <div class="field">
-        <label for="strand">Tinsel strand PNG</label>
-        <input id="strand" type="file" accept="image/png,image/*">
-        <button type="button" id="clear-strand" class="texty" disabled>Clear strand</button>
-        <p class="hint">Scattered through the source, then stretched with everything else.</p>
-      </div>
-
-      <button type="button" id="download" class="download" disabled>Download PNG</button>
-      <p id="status" class="status" role="status"></p>
+      <p id="status" class="status" role="status">Loading photos…</p>
     </aside>
 
     <main class="stage">
       <div class="frame" id="frame">
-        <canvas id="collage" width="736" height="1305" aria-label="Generated tinsel collage"></canvas>
+        <canvas id="collage" width="880" height="1560" aria-label="Generated photo collage"></canvas>
       </div>
     </main>
 
-    <section class="history-wrap" aria-labelledby="history-title">
-      <h2 id="history-title">Recent</h2>
-      <div class="history" id="history" role="list"></div>
-    </section>
+    <footer class="bar">
+      <button type="button" id="generate" disabled>Generate</button>
+    </footer>
   </div>
   <script src="script.js"></script>
 </body>
