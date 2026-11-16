@@ -3,6 +3,7 @@
    Generate pulls the next 10 and lets them bleed down the page.
    Width and height set the size of the collage.
    Add a photo by dropping it in Assets and adding its filename to PHOTOS.
+   photo-data.js keeps those photos exportable when the page is opened as a file.
 */
 
 "use strict";
@@ -51,6 +52,7 @@ const ui = {
   canvas: document.querySelector("#collage"),
   frame: document.querySelector("#frame"),
   generate: document.querySelector("#generate"),
+  exportBtn: document.querySelector("#export"),
   width: document.querySelector("#width"),
   height: document.querySelector("#height"),
   widthOut: document.querySelector("#width-out"),
@@ -107,8 +109,11 @@ function downscale(img, maxEdge) {
 
 async function loadLibrary() {
   for (const name of PHOTOS) {
+    const url = location.protocol === "file:" && typeof PHOTO_DATA !== "undefined" && PHOTO_DATA[name]
+      ? PHOTO_DATA[name]
+      : `Assets/${encodeURIComponent(name)}`;
     try {
-      const img = await loadUrl(`Assets/${encodeURIComponent(name)}`);
+      const img = await loadUrl(url);
       library.push(downscale(img, 1100));
     } catch (error) {
       console.warn(`Skipped ${name}`);
@@ -353,6 +358,24 @@ function fitCanvas() {
   ui.canvas.style.height = `${Math.max(1, ui.canvas.height * scale)}px`;
 }
 
+function exportJpeg() {
+  const canvas = ui.canvas;
+  const name = `collage-${canvas.width}x${canvas.height}.jpg`;
+  let href;
+  try {
+    href = canvas.toDataURL("image/jpeg", 0.92);
+  } catch (error) {
+    ui.status.textContent = "Could not export this collage.";
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function generate() {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
@@ -364,6 +387,7 @@ function generate() {
 
 function wire() {
   ui.generate.addEventListener("click", generate);
+  ui.exportBtn.addEventListener("click", exportJpeg);
   for (const input of [ui.width, ui.height]) {
     input.addEventListener("input", () => {
       updateOutputs();
@@ -387,6 +411,7 @@ async function start() {
     return;
   }
   ui.generate.disabled = false;
+  ui.exportBtn.disabled = false;
   generate();
 }
 

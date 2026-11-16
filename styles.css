@@ -117,6 +117,16 @@ canvas {
   justify-content: center;
 }
 
+.export {
+  position: fixed;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 2;
+  min-width: 0;
+  padding: 0.45rem 1.05rem;
+  font-size: 0.85rem;
+}
+
 button {
   min-width: 12rem;
   background: var(--ink);
@@ -165,5 +175,9 @@ button:disabled {
 
   button {
     width: 100%;
+  }
+
+  .export {
+    width: auto;
   }
 }
