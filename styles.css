@@ -45,6 +45,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
+  overflow-y: auto;
 }
 
 h1 {

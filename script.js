@@ -2,6 +2,7 @@
    Each result uses 10 photos from Assets, cut into overlapping pieces.
    Generate pulls the next 10 and lets them bleed down the page.
    Width and height set the size of the collage.
+   Drip sets how far the photos melt. Overlap sets how much the cutouts stack.
    Add a photo by dropping it in Assets and adding its filename to PHOTOS.
    photo-data.js keeps those photos exportable when the page is opened as a file.
 */
@@ -55,8 +56,12 @@ const ui = {
   exportBtn: document.querySelector("#export"),
   width: document.querySelector("#width"),
   height: document.querySelector("#height"),
+  drip: document.querySelector("#drip"),
+  overlap: document.querySelector("#overlap"),
   widthOut: document.querySelector("#width-out"),
   heightOut: document.querySelector("#height-out"),
+  dripOut: document.querySelector("#drip-out"),
+  overlapOut: document.querySelector("#overlap-out"),
   status: document.querySelector("#status"),
 };
 
@@ -124,6 +129,23 @@ async function loadLibrary() {
 function updateOutputs() {
   ui.widthOut.value = ui.width.value;
   ui.heightOut.value = ui.height.value;
+  ui.dripOut.value = ui.drip.value;
+  ui.overlapOut.value = ui.overlap.value;
+}
+
+/* 50 keeps the generated melt. 0 is still. Above 50 the runs grow longer, without covering the photos. */
+function dripStrength() {
+  const t = Number(ui.drip.value) / 100;
+  return t <= 0.5 ? t / 0.5 : 1 + (t - 0.5) * 0.9;
+}
+
+/* 50 keeps today's stacking. Lower spreads the cutouts, higher piles them. */
+function overlapTune() {
+  const t = Number(ui.overlap.value) / 100;
+  return {
+    spacing: 1 + (0.5 - t) * 1.5,
+    bulk: 1 + (t - 0.5) * 0.7,
+  };
 }
 
 function shuffle(items) {
@@ -176,10 +198,11 @@ function bleedProfile(rand) {
 }
 
 /* Overlapping cutouts instead of an even grid. The recipe changes with each generation. */
-function collagePieces(w, h, rand) {
+function collagePieces(w, h, rand, overlap) {
   const recipe = Math.floor(rand() * 3);
   const pieces = [];
   const count = batch.length;
+  const { spacing, bulk } = overlap;
   pieces.push({ img: batch[0], x: 0, y: 0, w, h, drip: false });
 
   if (recipe === 0) {
@@ -190,12 +213,12 @@ function collagePieces(w, h, rand) {
       pieces.push({
         img,
         x: -inset * 0.15,
-        y: y - ph * 0.28,
+        y: y - ph * 0.28 * bulk,
         w: w - inset * 0.25,
-        h: ph * (1.3 + rand() * 0.35),
+        h: ph * (1.3 + rand() * 0.35) * bulk,
         drip: true,
       });
-      y += ph * (0.52 + rand() * 0.2);
+      y += ph * (0.52 + rand() * 0.2) * spacing;
       if (y > h * 0.9) y = h * (0.12 + rand() * 0.45);
     });
     for (let k = 0; k < 3; k += 1) {
@@ -206,7 +229,7 @@ function collagePieces(w, h, rand) {
         x: rand() * (w - pw),
         y: rand() * (h - ph * 0.7),
         w: pw,
-        h: ph,
+        h: ph * bulk,
         drip: true,
       });
     }
@@ -228,12 +251,12 @@ function collagePieces(w, h, rand) {
         pieces.push({
           img: batch[index % count],
           x: col.x,
-          y: y - ph * 0.16,
+          y: y - ph * 0.16 * bulk,
           w: col.w,
-          h: ph * (1.2 + rand() * 0.3),
+          h: ph * (1.2 + rand() * 0.3) * bulk,
           drip: true,
         });
-        y += ph * (0.68 + rand() * 0.16);
+        y += ph * (0.68 + rand() * 0.16) * spacing;
         index += 2;
         guard += 1;
       }
@@ -243,7 +266,7 @@ function collagePieces(w, h, rand) {
       x: 0,
       y: h * (0.22 + rand() * 0.42),
       w: w * (0.78 + rand() * 0.22),
-      h: h * (0.14 + rand() * 0.12),
+      h: h * (0.14 + rand() * 0.12) * bulk,
       drip: true,
     });
     return pieces;
@@ -251,9 +274,9 @@ function collagePieces(w, h, rand) {
 
   batch.forEach((img, index) => {
     const pw = w * (0.46 + rand() * 0.36);
-    const ph = h * (0.18 + rand() * 0.18);
+    const ph = h * (0.18 + rand() * 0.18) * bulk;
     const x = (index % 2 === 0 ? -w * 0.02 : w * 0.22) + (rand() - 0.5) * w * 0.1;
-    const y = (index / count) * h * 0.82 + (rand() - 0.5) * h * 0.08;
+    const y = (index / count) * h * (0.55 + spacing * 0.27) + (rand() - 0.5) * h * 0.08;
     pieces.push({ img, x, y, w: pw, h: ph, drip: true });
   });
   return pieces;
@@ -286,16 +309,17 @@ function dripCell(ctx, source, cell, w, h, rand, profile) {
       continue;
     }
 
-    const startFrac = clamp(profile.start + (rand() - 0.5) * 0.3, 0.18, 0.82);
+    const startFrac = clamp(profile.start + (rand() - 0.5) * 0.3 + (1 - profile.strength) * 0.12, 0.18, 0.82);
     const cut = cell.y + cell.h * startFrac;
-    const y2 = Math.min(h, cut + Math.max(8, groupReach * (0.7 + rand() * 0.55)));
+    const length = groupReach * (0.7 + rand() * 0.55);
+    const y2 = Math.min(h, cut + length);
     const shift = (rand() - 0.5) * cell.w * profile.side;
     let sx = Math.round(x + shift);
     if (sx < 0) sx = 0;
     if (sx > w - width) sx = Math.max(0, w - width);
     const sampleY = clamp(Math.round(cut - rand() * cell.h * 0.22), 0, h - 1);
     ctx.filter = rand() < 0.18 ? `brightness(${(0.88 + rand() * 0.28).toFixed(2)})` : "none";
-    drawStrip(ctx, source, sx, sampleY, width, 1, x, cut, width, y2 - cut, w);
+    if (length >= 1) drawStrip(ctx, source, sx, sampleY, width, 1, x, cut, width, y2 - cut, w);
     x += Math.max(1, width);
   }
 }
@@ -316,8 +340,15 @@ function render() {
   const w = Number(ui.width.value);
   const h = Number(ui.height.value);
   const rand = mulberry32(hashString(`bleed:${seed}`));
-  const profile = bleedProfile(rand);
-  const cells = collagePieces(w, h, rand);
+  const strength = dripStrength();
+  const shaped = bleedProfile(rand);
+  const profile = {
+    ...shaped,
+    reach: shaped.reach * strength,
+    trails: Math.round(shaped.trails * strength),
+    strength,
+  };
+  const cells = collagePieces(w, h, rand, overlapTune());
 
   const source = document.createElement("canvas");
   source.width = w;
@@ -388,7 +419,7 @@ function generate() {
 function wire() {
   ui.generate.addEventListener("click", generate);
   ui.exportBtn.addEventListener("click", exportJpeg);
-  for (const input of [ui.width, ui.height]) {
+  for (const input of [ui.width, ui.height, ui.drip, ui.overlap]) {
     input.addEventListener("input", () => {
       updateOutputs();
       window.clearTimeout(sliderTimer);
